@@ -128,7 +128,7 @@ void Solver::niverPreprocessor() {
         // for every var in the formula
         for (int var = 1; var <= nVars(); var++) {
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
-            vector<int> positiveClausesIndexes, negativeClausesIndexes;
+            //vector<int> positiveClausesIndexes, negativeClausesIndexes;
             set<int> indicesSet;
             // for every clause in the formula
             int oldNumLits = 0;

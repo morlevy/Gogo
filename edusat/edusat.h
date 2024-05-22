@@ -18,7 +18,7 @@ using namespace std;
 typedef int Var;
 typedef int Lit;
 typedef vector<Lit> clause_t;
-typedef std::map<Lit, bool> clause_map_t;
+typedef std::unordered_map<Lit, bool> clause_map_t;
 typedef clause_t::iterator clause_it;
 typedef vector<Lit> trail_t;
 
