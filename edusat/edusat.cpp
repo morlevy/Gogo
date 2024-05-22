@@ -136,13 +136,17 @@ void Solver::niverPreprocessor() {
                 if (containsLiteral(clause, var)) {
                     positiveClauses.push_back(clause);
                     positiveClausesIndexes.push_back(clauseIndex);
-                    oldNumLits++;
                 }
                 if (containsLiteral(clause, -var)) {
                     negativeClauses.push_back(clause);
                     negativeClausesIndexes.push_back(clauseIndex);
-                    oldNumLits++;
                 }
+            }
+            vector<int> unionVec(positiveClauses.size() + negativeClauses.size());
+            auto it = set_union(positiveClausesIndexes.begin(), positiveClausesIndexes.end(), negativeClausesIndexes.begin(), negativeClausesIndexes.end(), unionVec.begin());
+            unionVec.resize(it - unionVec.begin());
+            for (int index : unionVec) {
+                oldNumLits += cnf[index].size();
             }
 
             for (const Clause& positiveClause : positiveClauses) {
@@ -155,10 +159,7 @@ void Solver::niverPreprocessor() {
                     if (oldNumLits >= numLits){
                         entry = true;
                         // cnf - (positiveClause + negativeClause) + resolvedClauses
-                        for (int index : positiveClausesIndexes) {
-                            cnf.erase(cnf.begin() + index);
-                        }
-                        for (int index : negativeClausesIndexes) {
+                        for (int index : unionVec) {
                             cnf.erase(cnf.begin() + index);
                         }
                         for (const Clause& clause : resolvedClauses) {
