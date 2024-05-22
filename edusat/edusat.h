@@ -18,6 +18,7 @@ using namespace std;
 typedef int Var;
 typedef int Lit;
 typedef vector<Lit> clause_t;
+typedef std::map<Lit, bool> clause_map_t;
 typedef clause_t::iterator clause_it;
 typedef vector<Lit> trail_t;
 
@@ -153,11 +154,12 @@ int l2rl(int l) {
 /********** classes ******/ 
 
 class Clause {
+    clause_map_t m;
 	clause_t c;
 	int lw,rw; //watches;	
 public:	
 	Clause(){};
-	void insert(int i) {c.push_back(i);}
+	void insert(int i) {c.push_back(i); m[i] = true;}
 	void lw_set(int i) {lw = i; /*assert(lw != rw);*/}
 	void rw_set(int i) {rw = i; /*assert(lw != rw);*/}	
 	clause_t& cl() {return c;}
@@ -172,7 +174,8 @@ public:
 	int  lit(int i) {return c[i];} 		
 	inline ClauseState next_not_false(bool is_left_watch, Lit other_watch, bool binary, int& loc); 
 	size_t size() {return c.size();}
-	void reset() { c.clear(); }	
+	void reset() { c.clear(); m = clause_map_t();}
+    bool contains(int i) {return m.count(i);}
 	void print() {for (clause_it it = c.begin(); it != c.end(); ++it) {cout << *it << " ";}; }
 	void print_real_lits() {
 		Lit l; 
@@ -265,9 +268,7 @@ class Solver {
 	void restart();
 
     // preprocessing
-    bool containsLiteral(const Clause& clause, int literal) {
-        return clause.find(literal) != -1;
-    }
+
 
     Clause resolve(const Clause& positiveClause, const Clause& negativeClause);
     void niverPreprocessor();

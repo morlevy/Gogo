@@ -129,23 +129,22 @@ void Solver::niverPreprocessor() {
         for (int var = 1; var <= nVars(); var++) {
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
             vector<int> positiveClausesIndexes, negativeClausesIndexes;
+            set<int> indicesSet;
             // for every clause in the formula
             int oldNumLits = 0;
-            for (int clauseIndex = 0; clauseIndex < cnf.size(); clauseIndex++) {
-                Clause clause = cnf[clauseIndex];
-                if (containsLiteral(clause, var)) {
+            int clauseIndex = 0;
+            for (const Clause& clause : cnf) {
+                if (clause.contains(var)) {
                     positiveClauses.push_back(clause);
-                    positiveClausesIndexes.push_back(clauseIndex);
+                    indicesSet.insert(clauseIndex);
                 }
-                if (containsLiteral(clause, -var)) {
+                if (clause.contains(-var)) {
                     negativeClauses.push_back(clause);
-                    negativeClausesIndexes.push_back(clauseIndex);
+                    indicesSet.insert(clauseIndex);
                 }
+                clauseIndex++;
             }
-            vector<int> unionVec(positiveClauses.size() + negativeClauses.size());
-            auto it = set_union(positiveClausesIndexes.begin(), positiveClausesIndexes.end(), negativeClausesIndexes.begin(), negativeClausesIndexes.end(), unionVec.begin());
-            unionVec.resize(it - unionVec.begin());
-            for (int index : unionVec) {
+            for (int index : indicesSet) {
                 oldNumLits += cnf[index].size();
             }
 
