@@ -34,9 +34,13 @@ typedef vector<Lit> trail_t;
 #define Rescale_threshold 1e100
 #define Assignment_file "assignment.txt"
 
+class Solver;
+extern Solver S;
+
 int verbose = 0;
 double begin_time;
 double timeout = 0.0;
+vector<Lit> Incremental;
 
 
 void Abort(string s, int i);
@@ -61,7 +65,8 @@ VAL_DEC_HEURISTIC ValDecHeuristic = VAL_DEC_HEURISTIC::PHASESAVING;
 unordered_map<string, option*> options = {
 	{"v",           new intoption(&verbose, 0, 2, "Verbosity level")},
 	{"timeout",     new doubleoption(&timeout, 0.0, 36000.0, "Timeout in seconds")},
-	{"valdh",       new intoption((int*)&ValDecHeuristic, 0, 1, "{0: phase-saving, 1: literal-score}")}
+	{"valdh",       new intoption((int*)&ValDecHeuristic, 0, 1, "{0: phase-saving, 1: literal-score}")},
+    {"inc", new vec_lit_option(&Incremental, "Incremental mode")},
 };
 
 
@@ -196,6 +201,7 @@ public:
 };
 
 class Solver {
+    std::vector<Lit> incremental;
 	vector<Clause> cnf; // clause DB. 
 	vector<int> unaries; 
 	trail_t trail;  // assignment stack	

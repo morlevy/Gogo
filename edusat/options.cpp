@@ -40,13 +40,29 @@ bool doubleoption::parse(string st) {
 	return Tparse<double>(st, val, lb, ub, p_to_var);
 };
 
+bool vec_lit_option::parse(string st) {
+    stringstream ss(st);
+    string s;
+    vector<Lit>& v = *p_to_var;
+    while (ss >> s) {
+        try {
+            int val = stoi(s);
+            v.push_back(val);
+        }
+        catch (...) {
+            Abort("value " + s + " not numeric", 1);
+        }
+    }
+    return true;
+}
+
 extern unordered_map<string, option*> options;
 
 void help() {
 	stringstream st;
 	st << "\nUsage: edusat <options> <file name>\n \n"
 		"Options:\n";
-	for (auto h : options) {
+	for (const auto& h : options) {
 		option* opt = options[h.first];
 		st << left << setw(16) << "-" + h.first;
 		st << opt->msg << ". Default: " << opt->val() << "." << endl;
@@ -55,10 +71,9 @@ void help() {
 }
 
 void parse_options(int argc, char** argv) {
-	if (argc % 2 == 1 || string(argv[1]).compare("-h") == 0)
+	if (argc == 1 || string(argv[1]) == "-h")
 		help();
 	for (int i = 1; i < argc - 1; ++i) {
-		
 		string st = argv[i] + 1;
 		if (argv[i][0] != '-' || options.count(st) == 0) {
 			cout << st << endl;
@@ -67,6 +82,7 @@ void parse_options(int argc, char** argv) {
 		if (i == argc - 2) Abort(string("missing value after ") + st, 2);
 		i++;
 		options[st]->parse(argv[i]);
+        cout << "DEBUG: " << options[st]->val() << endl;
 	}
 	cout << argv[argc - 1] << endl;
 }

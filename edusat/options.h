@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 using namespace std;
+using Lit = int;
 
 class option {
 public:
@@ -39,20 +41,21 @@ public:
     string val() { return to_string(*p_to_var); }
 };
 
-class literaloption : public option {
+class vec_lit_option : public option {
 public:
-    literaloption(string *p, string _msg) : option(_msg), p_to_var(p) {}
+    vec_lit_option(std::vector<Lit> *p, const char* _msg) : option(_msg),
+                                                       p_to_var(p) {};
 
-    string *p_to_var; // pointer to the variable holding the option value.
-    bool parse(string st) {
-        *p_to_var = st;
-        return true;
+    std::vector<Lit> *p_to_var; // pointer to the variable holding the option value.
+    bool parse(string st);
+    string val() {
+        string s;
+        for (Lit l : *p_to_var) {
+            s += to_string(l) + " ";
+        }
+        return s;
     }
-
-    string val() { return *p_to_var; }
-
 };
-
 void Abort(string s, int i);
 
 void parse_options(int argc, char **argv);
