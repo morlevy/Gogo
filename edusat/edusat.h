@@ -93,7 +93,7 @@ enum class SolverState{
 } ;
 /***************** service functions **********************/
 
-#ifdef _MSC_VER
+#ifndef _MSC_VER
 #include <ctime>
 
 static inline double cpuTime(void) {
@@ -141,7 +141,7 @@ Var l2v(Lit l) {
 	return (l+1) / 2;	
 } 
 
-Lit negate(Lit l) {
+Lit lit_negate(Lit l) {
 	if (Neg(l)) return l + 1;  // odd
 	return l - 1;		
 }
