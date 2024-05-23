@@ -165,10 +165,10 @@ public:
 	clause_t& cl() {return c;}
 	int get_lw() {return lw;}
 	int get_rw() {return rw;}
-    int find_lit(int i) { // find the index of a literal in the clause. If not found, return -1
+    /**int find_lit(int i) { // find the index of a literal in the clause. If not found, return -1
         int index = std::find(c.begin(), c.end(), i);
         return index == c.end() ? -1 : index;
-    }
+    }**/
 	int get_lw_lit() {return c[lw];}
 	int get_rw_lit() {return c[rw];}
 	int  lit(int i) {return c[i];} 		
@@ -270,7 +270,7 @@ class Solver {
     // preprocessing
 
 
-    Clause resolve(const Clause& positiveClause, const Clause& negativeClause);
+    Clause resolve( Clause& positiveClause, Clause& negativeClause);
     void niverPreprocessor();
 
 

@@ -105,15 +105,15 @@ void Solver::read_cnf(ifstream& in) {
 /******************  PreProcessing ******************************/
 #pragma region PreProcessing
 
-Clause Solver::resolve(const Clause& positiveClause, const Clause& negativeClause) {
+Clause Solver::resolve(Clause& positiveClause, Clause& negativeClause) {
     Clause result;
-    for (int literal : positiveClause) {
-        if (!containsLiteral(negativeClause, -literal)) {
+    for (int literal : positiveClause.cl()) {
+        if (!negativeClause.contains(-literal)) {
             result.insert(literal);
         }
     }
-    for (int literal : negativeClause) {
-        if (!containsLiteral(positiveClause, -literal)) {
+    for (int literal : negativeClause.cl()) {
+        if (!positiveClause.contains(-literal)) {
             result.insert(literal);
         }
     }
@@ -126,14 +126,14 @@ void Solver::niverPreprocessor() {
     do {
         entry = false;
         // for every var in the formula
-        for (int var = 1; var <= nVars(); var++) {
+        for (int var = 1; var <= nvars; var++) {
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
             //vector<int> positiveClausesIndexes, negativeClausesIndexes;
             set<int> indicesSet;
             // for every clause in the formula
             int oldNumLits = 0;
             int clauseIndex = 0;
-            for (const Clause& clause : cnf) {
+            for (Clause& clause : cnf) {
                 if (clause.contains(var)) {
                     positiveClauses.push_back(clause);
                     indicesSet.insert(clauseIndex);
@@ -148,17 +148,17 @@ void Solver::niverPreprocessor() {
                 oldNumLits += cnf[index].size();
             }
 
-            for (const Clause& positiveClause : positiveClauses) {
-                for (const Clause& negativeClause : negativeClauses) {
+            for ( Clause& positiveClause : positiveClauses) {
+                for ( Clause& negativeClause : negativeClauses) {
                     resolvedClauses.push_back(resolve(positiveClause, negativeClause));
                     int numLits = 0;
-                    for (const Clause& clause : resolvedClauses) {
+                    for (Clause& clause : resolvedClauses) {
                         numLits += clause.size();
                     }
                     if (oldNumLits >= numLits){
                         entry = true;
                         // cnf - (positiveClause + negativeClause) + resolvedClauses
-                        for (int index : unionVec) {
+                        for (int index : indicesSet) {
                             cnf.erase(cnf.begin() + index);
                         }
                         for (const Clause& clause : resolvedClauses) {
