@@ -325,8 +325,17 @@ int Solver::getVal(Var v) {
 SolverState Solver::decide() {
     if (verbose_now()) cout << "decide" << endl;
     Lit best_lit = 0;
-    int max_score = 0;
     Var bestVar = 0;
+
+    while(qhead_inc < Incremental.size()) {
+        best_lit = Incremental[qhead_inc];
+        qhead_inc++;
+        bestVar = v2l(best_lit);
+        if (state[bestVar] == VarState::V_UNASSIGNED) {
+            if (verbose_now()) cout << "Incremental: " << l2rl(best_lit) << endl;
+            goto Apply_decision;
+        }
+    }
     switch (VarDecHeuristic) {
 
         case VAR_DEC_HEURISTIC::MINISAT: {
@@ -458,7 +467,7 @@ SolverState Solver::BCP() {
             switch (res) {
                 case ClauseState::C_UNSAT: { // conflict
                     if (verbose_now()) print_state();
-                    if (dl == 0) return SolverState::UNSAT;
+                    if (dl < Incremental.size()) return SolverState::UNSAT;
                     conflicting_clause_idx = *it;  // this will also break the loop
                     int dist = distance(it, watches[NegatedLit].rend()) -
                                1; // # of entries in watches[NegatedLit] that were not yet processed when we hit this conflict.

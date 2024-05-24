@@ -28,6 +28,8 @@ public:
     string val() { return to_string(*p_to_var); }
 };
 
+extern int l2rl(int l);
+
 class doubleoption : public option {
 public:
     doubleoption(double *p, double _lb, double _ub, string _msg) : option(_msg),
@@ -47,11 +49,11 @@ public:
                                                        p_to_var(p) {};
 
     std::vector<Lit> *p_to_var; // pointer to the variable holding the option value.
-    bool parse(string st);
-    string val() {
+    bool parse(string st) override;
+    string val() override {
         string s;
         for (Lit l : *p_to_var) {
-            s += to_string(l) + " ";
+            s += to_string(l2rl(l)) + " ";
         }
         return s;
     }

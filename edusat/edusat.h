@@ -132,12 +132,12 @@ bool match(ifstream& in, const char* str) {
     return true;
 }
 
-unsigned int Abs(int x) { // because the result is compared to an unsigned int. unsigned int are introduced by size() functions, that return size_t, which is defined to be unsigned. 
+unsigned int Abs(int x) { // because the result is compared to an unsigned int. unsigned int are introduced by size() functions, that return size_t, which is defined to be unsigned.
 	if (x < 0) return (unsigned int)-x;
 	else return (unsigned int)x;
 }
 
-unsigned int v2l(int i) { // maps a literal as it appears in the cnf to literal
+int v2l(int i) { // maps a literal as it appears in the cnf to literal
 	if (i < 0) return ((-i) << 1) - 1; 
 	else return i << 1;
 } 
@@ -162,7 +162,7 @@ class Clause {
     clause_map_t m;
 	clause_t c;
 	int lw,rw; //watches;	
-public:	
+public:
 	Clause(){};
 	void insert(int i) {c.push_back(i); m[i] = true;}
 	void lw_set(int i) {lw = i; /*assert(lw != rw);*/}
@@ -201,7 +201,7 @@ public:
 };
 
 class Solver {
-    std::vector<Lit> incremental;
+
 	vector<Clause> cnf; // clause DB. 
 	vector<int> unaries; 
 	trail_t trail;  // assignment stack	
@@ -228,7 +228,8 @@ class Solver {
 		nvars,			// # vars
 		nclauses, 		// # clauses
 		nlits,			// # literals = 2*nvars				
-		qhead;			// index into trail. Used in BCP() to follow the propagation process.
+		qhead,			// index into trail. Used in BCP() to follow the propagation process.
+        qhead_inc;
 	int					
 		num_learned, 	
 		num_decisions,

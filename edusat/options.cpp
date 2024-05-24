@@ -40,6 +40,8 @@ bool doubleoption::parse(string st) {
 	return Tparse<double>(st, val, lb, ub, p_to_var);
 };
 
+extern int v2l(int v);
+
 bool vec_lit_option::parse(string st) {
     stringstream ss(st);
     string s;
@@ -47,7 +49,7 @@ bool vec_lit_option::parse(string st) {
     while (ss >> s) {
         try {
             int val = stoi(s);
-            v.push_back(val);
+            v.push_back(v2l(val));
         }
         catch (...) {
             Abort("value " + s + " not numeric", 1);
@@ -57,6 +59,8 @@ bool vec_lit_option::parse(string st) {
 }
 
 extern unordered_map<string, option*> options;
+
+extern int l2rl(int l);
 
 void help() {
 	stringstream st;
