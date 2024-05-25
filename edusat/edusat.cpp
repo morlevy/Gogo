@@ -106,16 +106,15 @@ void Solver::read_cnf(ifstream &in) {
     niverPreprocessor();
     cout << "CNF read successfully" << endl;
     set_nclauses(cnf.size());
-
-    int l=0, r=1;
-    for (Clause &clause: cnf){
-        clause.lw_set(l);
-        clause.rw_set(r);
-        int loc = static_cast<int>(cnf.size());  // the first is in location 0 in cnf
-        int size = clause.size();
-
-        watches[clause.lit(l)].push_back(loc);
-        watches[clause.lit(r)].push_back(loc);
+    auto newCnf = cnf;
+    cnf.clear();
+    for (Clause &clause: newCnf) {
+        if (clause.size() == 1) {
+            add_unary_clause(clause.cl()[0]);
+        }
+        else {
+            add_clause(clause, 0, 1);
+        }
     }
 
     initialize();
