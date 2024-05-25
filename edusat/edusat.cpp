@@ -87,7 +87,8 @@ void Solver::read_cnf(ifstream &in) {
                     break; // unary clause. Note we do not add it as a clause.
                 }
                 default:
-                    add_clause(c, 0, 1);
+                    cnf.push_back(c);
+                    //add_clause(c, 0, 1);
             }
             c.reset();
             s.clear();
@@ -95,15 +96,30 @@ void Solver::read_cnf(ifstream &in) {
         }
         if (Abs(i) > vars) Abort("Literal index larger than declared on the first line", 1);
         //if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) bumpVarScore(abs(i));
-        printf("i: %d", i);
+        //printf("i: %d", i);
         i = v2l(i);
-        printf(" v2l(i): %d\n", i);
+        //printf(" v2l(i): %d\n", i);
         //if (ValDecHeuristic == VAL_DEC_HEURISTIC::LITSCORE) bumpLitScore(i);
         s.insert(i);
         //c.insert(i);
     }
     niverPreprocessor();
-    print_cnf();
+    cout << "CNF read successfully" << endl;
+    set_nclauses(cnf.size());
+
+    int l=0, r=1;
+    for (Clause &clause: cnf){
+        c.lw_set(l);
+        c.rw_set(r);
+        int loc = static_cast<int>(cnf.size());  // the first is in location 0 in cnf
+        int size = c.size();
+
+        watches[c.lit(l)].push_back(loc);
+        watches[c.lit(r)].push_back(loc);
+    }
+
+    initialize();
+    print_real_cnf();
     for (Clause &clause: cnf) {
         for (int lit: clause.cl()) {
             if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) bumpVarScore(l2v(lit));
@@ -149,7 +165,7 @@ void Solver::niverPreprocessor() {
         entry = false;
         // for every var in the formula
         for (int var = 1; var <= nvars; var++) {
-            printf("NiVER: var: %d\n", var);
+            //printf("NiVER: var: %d\n", var);
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
             set<vector<Lit>> resolvedVectorsSet;
             //vector<int> positiveClausesIndexes, negativeClausesIndexes;
@@ -206,7 +222,6 @@ void Solver::niverPreprocessor() {
                         continue;
                     }
                     numLits += resolvedClause.size();
-                    printf("NiVER: oldNumLits: %d numLits: %d\n", oldNumLits, numLits);
                     if (oldNumLits >= numLits) {
                         entry = true;
                         if (resolvedClause.empty()) {
@@ -226,8 +241,6 @@ void Solver::niverPreprocessor() {
                             newCnf.push_back(newClause);
                         }
                         cnf = newCnf;
-                        printf("NiVER: cnf\n");
-                        print_real_cnf();
                     }
                 }
             }

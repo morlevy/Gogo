@@ -203,7 +203,6 @@ public:
 };
 
 class Solver {
-
 	vector<Clause> cnf; // clause DB. 
 	vector<int> unaries; 
 	trail_t trail;  // assignment stack	
