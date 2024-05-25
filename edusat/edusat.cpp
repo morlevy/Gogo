@@ -109,13 +109,13 @@ void Solver::read_cnf(ifstream &in) {
 
     int l=0, r=1;
     for (Clause &clause: cnf){
-        c.lw_set(l);
-        c.rw_set(r);
+        clause.lw_set(l);
+        clause.rw_set(r);
         int loc = static_cast<int>(cnf.size());  // the first is in location 0 in cnf
-        int size = c.size();
+        int size = clause.size();
 
-        watches[c.lit(l)].push_back(loc);
-        watches[c.lit(r)].push_back(loc);
+        watches[clause.lit(l)].push_back(loc);
+        watches[clause.lit(r)].push_back(loc);
     }
 
     initialize();
