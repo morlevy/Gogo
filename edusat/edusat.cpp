@@ -143,11 +143,13 @@ vector<int> Solver::resolve(Clause &positiveClause, Clause &negativeClause, int 
 
 void Solver::niverPreprocessor() {
     cout << "Starting Niver Preprocessor" << endl;
-    bool entry = true;
+    print_real_cnf();
+    bool entry = false;
     do {
+        entry = false;
         // for every var in the formula
         for (int var = 1; var <= nvars; var++) {
-            //printf("NiVER: var: %d\n", var);
+            printf("NiVER: var: %d\n", var);
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
             set<vector<Lit>> resolvedVectorsSet;
             //vector<int> positiveClausesIndexes, negativeClausesIndexes;
@@ -170,41 +172,68 @@ void Solver::niverPreprocessor() {
             for (int index: indicesSet) {
                 oldNumLits += cnf[index].size();
             }
+            int numLits = 0;
+            set<vector<int>> newCnfSet;
+            vector<Clause> newCnf;
+            int index = 0;
+            for (Clause &clause: cnf) {
+                if (indicesSet.count(index++) == 0) {
+                    newCnfSet.insert(clause.cl());
+                }
+            }
+            for (auto &vec: newCnfSet) {
+                Clause clause;
+                for (int lit: vec) {
+                    clause.insert(lit);
+                }
+                newCnf.push_back(clause);
+            }
             for (Clause &positiveClause: positiveClauses) {
                 for (Clause &negativeClause: negativeClauses) {
+                    bool exists = false;
                     auto resolvedClause = resolve(positiveClause, negativeClause, var);
                     //print resolved clause
                     if (!resolvedClause.empty()) {
-                        resolvedVectorsSet.insert(resolvedClause);
+                        if (resolvedVectorsSet.count(resolvedClause) > 0) {
+                            exists = true;
+                        } else {
+                            resolvedVectorsSet.insert(resolvedClause);
+                        }
+                    }
+
+
+                    if (positiveClauses.empty() || negativeClauses.empty()) {
+                        continue;
+                    }
+                    numLits += resolvedClause.size();
+                    printf("NiVER: oldNumLits: %d numLits: %d\n", oldNumLits, numLits);
+                    if (oldNumLits >= numLits) {
+                        entry = true;
+                        if (resolvedClause.empty()) {
+                            cnf = newCnf;
+                            continue;
+                        }
+                        // cnf - (positiveClause + negativeClause) + resolvedClauses
+                        exists = false;
+                        if (newCnfSet.count(resolvedClause) > 0) {
+                            exists = true;
+                        } else {
+                            newCnfSet.insert(resolvedClause);
+                            Clause newClause;
+                            for (int lit: resolvedClause) {
+                                newClause.insert(lit);
+                            }
+                            newCnf.push_back(newClause);
+                        }
+                        cnf = newCnf;
+                        printf("NiVER: cnf\n");
+                        print_real_cnf();
                     }
                 }
             }
-            int numLits = 0;
-            for (const auto &clause: resolvedVectorsSet) {
-                numLits += clause.size();
-            }
-            printf("NiVER: oldNumLits: %d numLits: %d\n", oldNumLits, numLits);
-            if (oldNumLits >= numLits) {
-                entry = true;
-                // cnf - (positiveClause + negativeClause) + resolvedClauses
-                vector<Clause> newCnf;
-                int index = 0;
-                for (Clause &clause: cnf) {
-                    if (indicesSet.count(index++) == 0) {
-                        newCnf.push_back(clause);
-                    }
-                }
-                for (const auto &vec: resolvedVectorsSet) {
-                    Clause clause;
-                    for (int lit: vec) {
-                        clause.insert(lit);
-                    }
-                    newCnf.push_back(clause);
-                }
-                cnf = newCnf;
-            }
+
         }
-    } while (!entry);
+    } while (entry);
 
     // fix the parameters of the solver
     set_nclauses(cnf.size());
