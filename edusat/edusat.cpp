@@ -104,6 +104,7 @@ void Solver::read_cnf(ifstream &in) {
         //c.insert(i);
     }
     niverPreprocessor();
+    print_real_cnf();
     cout << "CNF read successfully" << endl;
     set_nclauses(cnf.size());
     auto newCnf = cnf;
@@ -125,6 +126,10 @@ void Solver::read_cnf(ifstream &in) {
             if (ValDecHeuristic == VAL_DEC_HEURISTIC::LITSCORE) bumpLitScore(lit);
         }
     }
+    if (cnf.empty()){
+        cout << "UNSAT" << endl;
+        exit(0);
+    }
     if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) reset_iterators();
     cout << "Read " << cnf_size() << " clauses in " << cpuTime() - begin_time << " secs." << endl << "Solving..."
          << endl;
@@ -135,7 +140,7 @@ void Solver::read_cnf(ifstream &in) {
 /******************  PreProcessing ******************************/
 #pragma region PreProcessing
 
-vector<int> Solver::resolve(Clause &positiveClause, Clause &negativeClause, int var) {
+vector<int> Solver::resolve(Clause &positiveClause, Clause &negativeClause, int var, int *res) {
     unordered_set<int> clauseSet;
     for (int literal: positiveClause.cl()) {
         if (l2v(literal) != var) {
@@ -144,8 +149,10 @@ vector<int> Solver::resolve(Clause &positiveClause, Clause &negativeClause, int 
     }
     for (int literal: negativeClause.cl()) {
         if (l2v(literal) != var) {
-            if (clauseSet.count(lit_negate(literal)) > 0)
-               return vector<int>();
+            if (clauseSet.count(lit_negate(literal)) > 0) {
+                *res = 1;
+                return vector<int>();
+            }
             clauseSet.insert(literal);
         }
     }
@@ -206,13 +213,18 @@ void Solver::niverPreprocessor() {
             for (Clause &positiveClause: positiveClauses) {
                 for (Clause &negativeClause: negativeClauses) {
                     bool exists = false;
-                    auto resolvedClause = resolve(positiveClause, negativeClause, var);
+                    int res = 0;
+                    auto resolvedClause = resolve(positiveClause, negativeClause, var, &res);
                     //print resolved clause
                     if (!resolvedClause.empty()) {
                         if (resolvedVectorsSet.count(resolvedClause) > 0) {
                             exists = true;
                         } else {
                             resolvedVectorsSet.insert(resolvedClause);
+                        }
+                    } else {
+                        if (res == 0) {
+                            continue;
                         }
                     }
 

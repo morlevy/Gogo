@@ -278,7 +278,7 @@ class Solver {
     // preprocessing
 
 
-    vector<int> resolve( Clause& positiveClause, Clause& negativeClause, int var);
+    vector<int> resolve( Clause& positiveClause, Clause& negativeClause, int var, int *res);
     void niverPreprocessor();
 
 
