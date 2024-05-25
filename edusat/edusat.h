@@ -164,7 +164,7 @@ class Clause {
 	int lw,rw; //watches;	
 public:
 	Clause(){};
-	void insert(int i) {c.push_back(i); m[i] = true;}
+	void insert(int i) {c.push_back(i); m.insert(make_pair(i,true));}
 	void lw_set(int i) {lw = i; /*assert(lw != rw);*/}
 	void rw_set(int i) {rw = i; /*assert(lw != rw);*/}	
 	clause_t& cl() {return c;}
@@ -180,7 +180,8 @@ public:
 	inline ClauseState next_not_false(bool is_left_watch, Lit other_watch, bool binary, int& loc); 
 	size_t size() {return c.size();}
 	void reset() { c.clear(); m = clause_map_t();}
-    bool contains(int i) {return m.count(i);}
+    bool contains(int i) {return m.count(i)>=1;}
+    void print_map() {for (clause_map_t::iterator it = m.begin(); it != m.end(); ++it) {cout << it->first << " ";}}
 	void print() {for (clause_it it = c.begin(); it != c.end(); ++it) {cout << *it << " ";}; }
 	void print_real_lits() {
 		Lit l; 
@@ -198,6 +199,7 @@ public:
 			cout << " ";
 		};
 	}
+    //bool operator<( Clause& other) const {return c < other.cl();}
 };
 
 class Solver {
@@ -277,7 +279,7 @@ class Solver {
     // preprocessing
 
 
-    Clause resolve( Clause& positiveClause, Clause& negativeClause);
+    vector<int> resolve( Clause& positiveClause, Clause& negativeClause, int var);
     void niverPreprocessor();
 
 

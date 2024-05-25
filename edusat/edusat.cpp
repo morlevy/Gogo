@@ -64,8 +64,8 @@ void Solver::read_cnf(ifstream &in) {
     while (in.good() && in.peek() != EOF) {
         i = parseInt(in);
         if (i == 0) {
-            c.cl().resize(s.size());
-            copy(s.begin(), s.end(), c.cl().begin());
+            for (Lit l: s) c.insert(l);
+            //copy(s.begin(), s.end(), c.cl().begin());
             switch (c.size()) {
                 case 0: {
                     stringstream num;  // this allows to convert int to string
@@ -94,10 +94,21 @@ void Solver::read_cnf(ifstream &in) {
             continue;
         }
         if (Abs(i) > vars) Abort("Literal index larger than declared on the first line", 1);
-        if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) bumpVarScore(abs(i));
+        //if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) bumpVarScore(abs(i));
+        printf("i: %d", i);
         i = v2l(i);
-        if (ValDecHeuristic == VAL_DEC_HEURISTIC::LITSCORE) bumpLitScore(i);
+        printf(" v2l(i): %d\n", i);
+        //if (ValDecHeuristic == VAL_DEC_HEURISTIC::LITSCORE) bumpLitScore(i);
         s.insert(i);
+        //c.insert(i);
+    }
+    niverPreprocessor();
+    print_cnf();
+    for (Clause &clause: cnf) {
+        for (int lit: clause.cl()) {
+            if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) bumpVarScore(l2v(lit));
+            if (ValDecHeuristic == VAL_DEC_HEURISTIC::LITSCORE) bumpLitScore(lit);
+        }
     }
     if (VarDecHeuristic == VAR_DEC_HEURISTIC::MINISAT) reset_iterators();
     cout << "Read " << cnf_size() << " clauses in " << cpuTime() - begin_time << " secs." << endl << "Solving..."
@@ -109,41 +120,48 @@ void Solver::read_cnf(ifstream &in) {
 /******************  PreProcessing ******************************/
 #pragma region PreProcessing
 
-Clause Solver::resolve(Clause &positiveClause, Clause &negativeClause) {
-    Clause result;
+vector<int> Solver::resolve(Clause &positiveClause, Clause &negativeClause, int var) {
+    unordered_set<int> clauseSet;
     for (int literal: positiveClause.cl()) {
-        if (!negativeClause.contains(-literal)) {
-            result.insert(literal);
+        if (l2v(literal) != var) {
+            clauseSet.insert(literal);
         }
     }
     for (int literal: negativeClause.cl()) {
-        if (!positiveClause.contains(-literal)) {
-            result.insert(literal);
+        if (l2v(literal) != var) {
+            if (clauseSet.count(lit_negate(literal)) > 0)
+               return vector<int>();
+            clauseSet.insert(literal);
         }
     }
-    return result;
+    //printf("Resolved Clause: ");
+    vector<int> resolvedClause(clauseSet.begin(), clauseSet.end());
+    std::sort(resolvedClause.begin(), resolvedClause.end());
+    return resolvedClause;
 }
 
 
 void Solver::niverPreprocessor() {
     cout << "Starting Niver Preprocessor" << endl;
-    bool entry = false;
+    bool entry = true;
     do {
-        entry = false;
         // for every var in the formula
         for (int var = 1; var <= nvars; var++) {
+            //printf("NiVER: var: %d\n", var);
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
+            set<vector<Lit>> resolvedVectorsSet;
             //vector<int> positiveClausesIndexes, negativeClausesIndexes;
-            set<int> indicesSet;
+            unordered_set<int> indicesSet;
             // for every clause in the formula
             int oldNumLits = 0;
             int clauseIndex = 0;
             for (Clause &clause: cnf) {
-                if (clause.contains(var)) {
+                // if the clause contains the variable
+                if (clause.contains(v2l(var))) {
                     positiveClauses.push_back(clause);
                     indicesSet.insert(clauseIndex);
                 }
-                if (clause.contains(-var)) {
+                if (clause.contains(v2l(-var))) {
                     negativeClauses.push_back(clause);
                     indicesSet.insert(clauseIndex);
                 }
@@ -152,33 +170,45 @@ void Solver::niverPreprocessor() {
             for (int index: indicesSet) {
                 oldNumLits += cnf[index].size();
             }
-
             for (Clause &positiveClause: positiveClauses) {
                 for (Clause &negativeClause: negativeClauses) {
-                    resolvedClauses.push_back(resolve(positiveClause, negativeClause));
-                    int numLits = 0;
-                    for (Clause &clause: resolvedClauses) {
-                        numLits += clause.size();
-                    }
-                    if (oldNumLits >= numLits) {
-                        entry = true;
-                        // cnf - (positiveClause + negativeClause) + resolvedClauses
-                        for (int index: indicesSet) {
-                            cnf.erase(cnf.begin() + index);
-                        }
-                        for (const Clause &clause: resolvedClauses) {
-                            cnf.push_back(clause);
-                        }
-
+                    auto resolvedClause = resolve(positiveClause, negativeClause, var);
+                    //print resolved clause
+                    if (!resolvedClause.empty()) {
+                        resolvedVectorsSet.insert(resolvedClause);
                     }
                 }
             }
-
+            int numLits = 0;
+            for (const auto &clause: resolvedVectorsSet) {
+                numLits += clause.size();
+            }
+            printf("NiVER: oldNumLits: %d numLits: %d\n", oldNumLits, numLits);
+            if (oldNumLits >= numLits) {
+                entry = true;
+                // cnf - (positiveClause + negativeClause) + resolvedClauses
+                vector<Clause> newCnf;
+                int index = 0;
+                for (Clause &clause: cnf) {
+                    if (indicesSet.count(index++) == 0) {
+                        newCnf.push_back(clause);
+                    }
+                }
+                for (const auto &vec: resolvedVectorsSet) {
+                    Clause clause;
+                    for (int lit: vec) {
+                        clause.insert(lit);
+                    }
+                    newCnf.push_back(clause);
+                }
+                cnf = newCnf;
+            }
         }
     } while (!entry);
 
     // fix the parameters of the solver
-    nclauses = cnf.size();
+    set_nclauses(cnf.size());
+
 
 }
 
@@ -730,6 +760,7 @@ int main(int argc, char **argv) {
     ifstream in(argv[argc - 1]);
     if (!in.good()) Abort("cannot read input file", 1);
     cout << "This is edusat" << endl;
+
     S.read_cnf(in);
     in.close();
     S.solve();
