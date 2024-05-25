@@ -171,7 +171,7 @@ void Solver::niverPreprocessor() {
         entry = false;
         // for every var in the formula
         for (int var = 1; var <= nvars; var++) {
-            //printf("NiVER: var: %d\n", var);
+            printf("NiVER: var: %d\n", var);
             vector<Clause> positiveClauses, negativeClauses, resolvedClauses;
             set<vector<Lit>> resolvedVectorsSet;
             //vector<int> positiveClausesIndexes, negativeClausesIndexes;
@@ -212,6 +212,14 @@ void Solver::niverPreprocessor() {
             }
             for (Clause &positiveClause: positiveClauses) {
                 for (Clause &negativeClause: negativeClauses) {
+                    if (positiveClause.size() == 1){
+                        unaries.push_back(positiveClause.cl()[0]);
+                        continue;
+                    }
+                    if (negativeClause.size() == 1){
+                        unaries.push_back(negativeClause.cl()[0]);
+                        continue;
+                    }
                     bool exists = false;
                     int res = 0;
                     auto resolvedClause = resolve(positiveClause, negativeClause, var, &res);
@@ -245,6 +253,17 @@ void Solver::niverPreprocessor() {
                             exists = true;
                         } else {
                             newCnfSet.insert(resolvedClause);
+                            int l = resolvedClause[0];
+                            if (resolvedClause.size() == 1){
+                                if (state[l2v(l)] != VarState::V_UNASSIGNED)
+                                    if (Neg(l) != (state[l2v(l)] == VarState::V_FALSE)) {
+                                        S.print_stats();
+                                        Abort("UNSAT (conflicting unaries for var " + to_string(l2v(l)) + ")", 0);
+                                    }
+                                assert_lit(l);
+                                unaries.push_back(resolvedClause[0]);
+                                continue;
+                            }
                             Clause newClause;
                             for (int lit: resolvedClause) {
                                 newClause.insert(lit);
@@ -252,6 +271,8 @@ void Solver::niverPreprocessor() {
                             newCnf.push_back(newClause);
                         }
                         cnf = newCnf;
+                        cout << "CNF" << endl;
+                        print_real_cnf();
                     }
                 }
             }
